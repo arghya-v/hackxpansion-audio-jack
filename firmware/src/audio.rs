@@ -64,24 +64,6 @@ where
         registry: &mut Registry,
         buses: &mut BusAllocator,
     ) -> Result<(), DriverError> {
-        // -------------------------------------------------
-        // GPIO MAP
-        //
-        // GPIO0 = I2C SCL
-        // GPIO1 = I2C SDA
-        // GPIO2 = I2S BCLK
-        // GPIO3 = I2S DIN
-        // GPIO4 = I2S WCLK / LRCLK
-        // GPIO5 = MCLK
-        // GPIO6 = DAC RESET
-        // GPIO7 = NEXT
-        // GPIO8 = PREVIOUS
-        // GPIO9 = PLAY / PAUSE
-        // -------------------------------------------------
-
-        // -------------------------------------------------
-        // DAC HARDWARE RESET
-        // -------------------------------------------------
 
         let mut reset = Output::new(
             bank.gpio6,
@@ -172,17 +154,6 @@ where
             Spawner::for_current_executor().await
         };
 
-        // -------------------------------------------------
-        // MCLK PIO
-        //
-        // IMPORTANT:
-        //
-        // We configure the first PIO completely before
-        // requesting another PIO from BusAllocator.
-        //
-        // This avoids borrowing `buses` twice at once.
-        // -------------------------------------------------
-
         let mclk_pio = buses
             .request_pio(&[
                 &bank.gpio5,
@@ -216,13 +187,6 @@ where
             }
         );
 
-        // -------------------------------------------------
-        // I2S PIO
-        //
-        // The previous PioAccess has now gone out of scope,
-        // so `buses` can be borrowed again.
-        // -------------------------------------------------
-
         let i2s_pio = buses
             .request_pio(&[
                 &bank.gpio2,
@@ -254,12 +218,8 @@ where
                     &i2s_program,
                 );
 
-                // Start I2S.
                 i2s.start();
 
-                // `with_pio!` has recovered the concrete
-                // PIO/SM type, so this selects the correct
-                // Embassy task automatically.
                 i2s.spawn_audio_task(spawner);
             }
         );
@@ -268,18 +228,6 @@ where
     }
 }
 
-// =========================================================
-// AUDIO TASK DISPATCH
-// =========================================================
-//
-// PioI2sOut is parameterized by the concrete PIO block and
-// state-machine number.
-//
-// Xpanse's with_pio! macro recovers those concrete types.
-//
-// This trait maps each possible type to its Embassy task.
-//
-// =========================================================
 
 trait SpawnAudioTask {
     fn spawn_audio_task(
@@ -288,9 +236,6 @@ trait SpawnAudioTask {
     );
 }
 
-// ---------------------------------------------------------
-// PIO0
-// ---------------------------------------------------------
 
 impl SpawnAudioTask
     for PioI2sOut<
@@ -356,9 +301,6 @@ impl SpawnAudioTask
     }
 }
 
-// ---------------------------------------------------------
-// PIO1
-// ---------------------------------------------------------
 
 impl SpawnAudioTask
     for PioI2sOut<
@@ -424,10 +366,6 @@ impl SpawnAudioTask
     }
 }
 
-// ---------------------------------------------------------
-// PIO2
-// ---------------------------------------------------------
-
 impl SpawnAudioTask
     for PioI2sOut<
         'static,
@@ -492,9 +430,6 @@ impl SpawnAudioTask
     }
 }
 
-// =========================================================
-// PIO0 TASKS
-// =========================================================
 
 #[embassy_executor::task]
 async fn audio_task_pio0_sm0(
@@ -540,10 +475,6 @@ async fn audio_task_pio0_sm3(
     audio_task_loop(i2s).await;
 }
 
-// =========================================================
-// PIO1 TASKS
-// =========================================================
-
 #[embassy_executor::task]
 async fn audio_task_pio1_sm0(
     i2s: PioI2sOut<
@@ -587,10 +518,6 @@ async fn audio_task_pio1_sm3(
 ) {
     audio_task_loop(i2s).await;
 }
-
-// =========================================================
-// PIO2 TASKS
-// =========================================================
 
 #[embassy_executor::task]
 async fn audio_task_pio2_sm0(
@@ -636,10 +563,6 @@ async fn audio_task_pio2_sm3(
     audio_task_loop(i2s).await;
 }
 
-// =========================================================
-// AUDIO TEST LOOP
-// =========================================================
-
 async fn audio_task_loop<P, const SM: usize>(
     mut i2s: PioI2sOut<'static, P, SM>,
 )
@@ -660,11 +583,7 @@ where
 
             let sample = sample as u16 as u32;
 
-            // Stereo:
-            //
-            // [ LEFT ][ RIGHT ]
-            // [15:0]  [15:0]
-            //
+            
             *word = (sample << 16) | sample;
 
             phase = phase.wrapping_add(1_000);
@@ -673,10 +592,6 @@ where
         i2s.write(&buffer).await;
     }
 }
-
-// =========================================================
-// DAC I2C WRITE
-// =========================================================
 
 async fn dac_write<I>(
     i2c: &mut I,
@@ -694,8 +609,8 @@ where
     .map_err(|_| DriverError::InitFailed)
 }
 
-// =========================================================
-// TLV320DAC3100 CONFIGURATION
+
+// DAC CONFIGURATION
 // =========================================================
 
 async fn configure_dac<I>(
@@ -704,9 +619,7 @@ async fn configure_dac<I>(
 where
     I: I2c,
 {
-    // -------------------------------------------------
-    // PAGE 0
-    // -------------------------------------------------
+
 
     dac_write(i2c, 0x00, 0x00).await?;
 
@@ -725,10 +638,6 @@ where
 
     // I2S, 16-bit, codec slave
     dac_write(i2c, 0x1B, 0x00).await?;
-
-    // -------------------------------------------------
-    // PAGE 1
-    // -------------------------------------------------
 
     dac_write(i2c, 0x00, 0x01).await?;
 
@@ -755,9 +664,6 @@ where
     dac_write(i2c, 0x24, 0x92).await?;
     dac_write(i2c, 0x25, 0x92).await?;
 
-    // -------------------------------------------------
-    // PAGE 0
-    // -------------------------------------------------
 
     dac_write(i2c, 0x00, 0x00).await?;
 
