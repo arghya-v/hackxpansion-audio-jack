@@ -87,12 +87,3 @@ TLV320DAC3100
    ▼
 3.5 mm Headphone Jack
 ```
-
-Physical controls will manage playback:
-
-```text
-Next        ──► Next track
-Previous    ──► Previous track
-Play/Pause  ──► Toggle playback
-```
-
