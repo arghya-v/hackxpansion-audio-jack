@@ -1,4 +1,3 @@
-use embassy_executor::Spawner;
 
 use embassy_rp::{
     bind_interrupts,
@@ -64,7 +63,7 @@ where
         registry: &mut Registry,
         buses: &mut BusAllocator,
     ) -> Result<(), DriverError> {
-
+ 
         let mut reset = Output::new(
             bank.gpio6,
             Level::Low,
@@ -76,13 +75,8 @@ where
 
         embassy_time::Timer::after_millis(10).await;
 
-        // Keep RESET asserted high for the lifetime
-        // of the driver.
-        core::mem::forget(reset);
 
-        // -------------------------------------------------
-        // I2C
-        // -------------------------------------------------
+        core::mem::forget(reset);
 
         let mut i2c_bus = buses
             .create_i2c_hardware::<I2C0, _>(
@@ -93,10 +87,7 @@ where
             )
             .map_err(|_| DriverError::InitFailed)?;
 
-        // -------------------------------------------------
-        // DAC SOFTWARE RESET
-        // -------------------------------------------------
-
+ 
         dac_write(
             &mut i2c_bus,
             0x00,
@@ -106,19 +97,9 @@ where
 
         embassy_time::Timer::after_millis(10).await;
 
-        // -------------------------------------------------
-        // DAC CONFIGURATION
-        // -------------------------------------------------
 
         configure_dac(&mut i2c_bus).await?;
 
-        // -------------------------------------------------
-        // BUTTONS
-        //
-        // A = NEXT
-        // B = PREVIOUS
-        // C = PLAY / PAUSE
-        // -------------------------------------------------
 
         registry.register(
             slot,
@@ -138,22 +119,11 @@ where
             pin_button::<X>(bank.gpio9.into()),
         );
 
-        // -------------------------------------------------
-        // DMA
-        // -------------------------------------------------
-
         let dma = buses
             .request_dma::<DMA_CH0>()
             .map_err(|_| DriverError::InitFailed)?;
 
-        // -------------------------------------------------
-        // SPAWNER
-        // -------------------------------------------------
-
-        let spawner = unsafe {
-            Spawner::for_current_executor().await
-        };
-
+      
         let mclk_pio = buses
             .request_pio(&[
                 &bank.gpio5,
@@ -165,10 +135,9 @@ where
             mclk_common,
             mclk_sm,
             {
-                let mclk_program =
-                    PioClkProgram::new(
-                        &mut *mclk_common,
-                    );
+                let mclk_program = PioClkProgram::new(
+                    &mut *mclk_common,
+                );
 
                 let mut mclk = PioClk::new(
                     &mut *mclk_common,
@@ -178,15 +147,15 @@ where
                     MCLK_FREQUENCY,
                 );
 
-                // Start 12.288 MHz master clock.
+          
                 mclk.start();
 
-                // MCLK must continue running for the
-                // lifetime of the audio system.
+                
                 core::mem::forget(mclk);
             }
         );
 
+     
         let i2s_pio = buses
             .request_pio(&[
                 &bank.gpio2,
@@ -200,19 +169,18 @@ where
             i2s_common,
             i2s_sm,
             {
-                let i2s_program =
-                    PioI2sOutProgram::new(
-                        &mut *i2s_common,
-                    );
+                let i2s_program = PioI2sOutProgram::new(
+                    &mut *i2s_common,
+                );
 
                 let mut i2s = PioI2sOut::new(
                     &mut *i2s_common,
                     i2s_sm,
                     dma,
                     AudioDmaIrqs,
-                    bank.gpio3, // DIN
-                    bank.gpio2, // BCLK
-                    bank.gpio4, // LRCLK
+                    bank.gpio3, 
+                    bank.gpio2, 
+                    bank.gpio4, 
                     SAMPLE_RATE,
                     BIT_DEPTH,
                     &i2s_program,
@@ -220,376 +188,16 @@ where
 
                 i2s.start();
 
-                i2s.spawn_audio_task(spawner);
+         
+                registry.register(
+                    slot,
+                    Self::ID,
+                    i2s,
+                );
             }
         );
 
         Ok(())
-    }
-}
-
-
-trait SpawnAudioTask {
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    );
-}
-
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO0,
-        0,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio0_sm0(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO0,
-        1,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio0_sm1(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO0,
-        2,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio0_sm2(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO0,
-        3,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio0_sm3(self).unwrap());
-    }
-}
-
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO1,
-        0,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio1_sm0(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO1,
-        1,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio1_sm1(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO1,
-        2,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio1_sm2(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO1,
-        3,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio1_sm3(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO2,
-        0,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio2_sm0(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO2,
-        1,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio2_sm1(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO2,
-        2,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio2_sm2(self).unwrap());
-    }
-}
-
-impl SpawnAudioTask
-    for PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO2,
-        3,
-    >
-{
-    fn spawn_audio_task(
-        self,
-        spawner: Spawner,
-    ) {
-        spawner
-            .spawn(audio_task_pio2_sm3(self).unwrap());
-    }
-}
-
-
-#[embassy_executor::task]
-async fn audio_task_pio0_sm0(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO0,
-        0,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio0_sm1(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO0,
-        1,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio0_sm2(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO0,
-        2,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio0_sm3(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO0,
-        3,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio1_sm0(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO1,
-        0,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio1_sm1(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO1,
-        1,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio1_sm2(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO1,
-        2,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio1_sm3(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO1,
-        3,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio2_sm0(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO2,
-        0,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio2_sm1(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO2,
-        1,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio2_sm2(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO2,
-        2,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-#[embassy_executor::task]
-async fn audio_task_pio2_sm3(
-    i2s: PioI2sOut<
-        'static,
-        embassy_rp::peripherals::PIO2,
-        3,
-    >,
-) {
-    audio_task_loop(i2s).await;
-}
-
-async fn audio_task_loop<P, const SM: usize>(
-    mut i2s: PioI2sOut<'static, P, SM>,
-)
-where
-    P: embassy_rp::pio::Instance,
-{
-    let mut buffer = [0u32; 256];
-
-    let mut phase: u32 = 0;
-
-    loop {
-        for word in &mut buffer {
-            let sample: i16 = if phase < 32_768 {
-                12_000
-            } else {
-                -12_000
-            };
-
-            let sample = sample as u16 as u32;
-
-            
-            *word = (sample << 16) | sample;
-
-            phase = phase.wrapping_add(1_000);
-        }
-
-        i2s.write(&buffer).await;
     }
 }
 
@@ -610,17 +218,12 @@ where
 }
 
 
-// DAC CONFIGURATION
-// =========================================================
-
 async fn configure_dac<I>(
     i2c: &mut I,
 ) -> Result<(), DriverError>
 where
     I: I2c,
 {
-
-
     dac_write(i2c, 0x00, 0x00).await?;
 
     // CODEC_CLKIN = MCLK
@@ -663,7 +266,6 @@ where
     // Analog output volume = -9 dB
     dac_write(i2c, 0x24, 0x92).await?;
     dac_write(i2c, 0x25, 0x92).await?;
-
 
     dac_write(i2c, 0x00, 0x00).await?;
 
