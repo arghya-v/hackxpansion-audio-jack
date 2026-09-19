@@ -3,11 +3,11 @@ This project adds stereo audio playback through a **TLV320DAC3100** DAC and a **
 
 ## Images
 ![the case](https://cdn.hackclub.com/01a06d9f-5871-7f07-9ea1-f13b8a1d72d1/image.png)
-![pcb](https://cdn.hackclub.com/01a0ba92-1ee8-7d6e-9e94-aa3db825bc52/image.png)
+![pcb](https://cdn.hackclub.com/01a0bb2e-7094-7034-8e83-c10658a84b9e/image.png)
 ![3d](https://cdn.hackclub.com/01a06db8-5b80-7b92-82bc-98aca223c75d/image.png)
 
 ## Schematic
-![final schematic](https://cdn.hackclub.com/01a0ba93-0267-7a70-81d2-2f9d5cec6c4d/image.png)
+![final schematic](https://cdn.hackclub.com/01a0bb2d-8350-7ae1-a54f-9b21094ca6af/image.png)
 
 ## Features
 
