@@ -233,6 +233,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
+name = "audio_jack_firmware"
+version = "0.1.0"
+dependencies = [
+ "embassy-executor",
+ "embassy-rp",
+ "embassy-time",
+ "embedded-hal-async",
+ "xpanse-api",
+]
+
+[[package]]
 name = "auto_enums"
 version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1429,17 +1440,6 @@ name = "find-msvc-tools"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d45db016d36b838f563236e9193d0ee6ce38f3f68b6c94e914b4929c96bbb890"
-
-[[package]]
-name = "firmware"
-version = "0.1.0"
-dependencies = [
- "embassy-executor",
- "embassy-rp",
- "embassy-time",
- "embedded-hal-async",
- "xpanse-api",
-]
 
 [[package]]
 name = "fixed"
