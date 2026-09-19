@@ -2,7 +2,8 @@
 name = "firmware"
 version = "0.1.0"
 edition = "2024"
-
+description = "Rust driver for an audio jack and buttons"
+license = "MIT OR Apache-2.0"
 [dependencies]
 xpanse-api = "0.2.3"
 

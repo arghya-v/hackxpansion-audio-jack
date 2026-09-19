@@ -1,4 +1,3 @@
-
 use embassy_rp::{
     bind_interrupts,
     dma,
@@ -63,7 +62,7 @@ where
         registry: &mut Registry,
         buses: &mut BusAllocator,
     ) -> Result<(), DriverError> {
- 
+        // RESET
         let mut reset = Output::new(
             bank.gpio6,
             Level::Low,
@@ -75,9 +74,9 @@ where
 
         embassy_time::Timer::after_millis(10).await;
 
-
         core::mem::forget(reset);
 
+        // I2C
         let mut i2c_bus = buses
             .create_i2c_hardware::<I2C0, _>(
                 bank.gpio0,
@@ -87,7 +86,7 @@ where
             )
             .map_err(|_| DriverError::InitFailed)?;
 
- 
+        // DAC SOFTWARE RESET
         dac_write(
             &mut i2c_bus,
             0x00,
@@ -97,10 +96,10 @@ where
 
         embassy_time::Timer::after_millis(10).await;
 
-
+        // DAC CONFIGURATION
         configure_dac(&mut i2c_bus).await?;
 
-
+        // BUTTONS
         registry.register(
             slot,
             Self::ID,
@@ -119,11 +118,12 @@ where
             pin_button::<X>(bank.gpio9.into()),
         );
 
+        // DMA
         let dma = buses
             .request_dma::<DMA_CH0>()
             .map_err(|_| DriverError::InitFailed)?;
 
-      
+        // MCLK
         let mclk_pio = buses
             .request_pio(&[
                 &bank.gpio5,
@@ -147,15 +147,13 @@ where
                     MCLK_FREQUENCY,
                 );
 
-          
                 mclk.start();
 
-                
                 core::mem::forget(mclk);
             }
         );
 
-     
+        // I2S
         let i2s_pio = buses
             .request_pio(&[
                 &bank.gpio2,
@@ -178,9 +176,9 @@ where
                     i2s_sm,
                     dma,
                     AudioDmaIrqs,
-                    bank.gpio3, 
-                    bank.gpio2, 
-                    bank.gpio4, 
+                    bank.gpio3, // DIN
+                    bank.gpio2, // BCLK
+                    bank.gpio4, // LRCLK
                     SAMPLE_RATE,
                     BIT_DEPTH,
                     &i2s_program,
@@ -188,7 +186,8 @@ where
 
                 i2s.start();
 
-         
+                // Register I2S so applications can acquire it
+                // and call i2s.write(samples).await.
                 registry.register(
                     slot,
                     Self::ID,
@@ -217,16 +216,14 @@ where
     .map_err(|_| DriverError::InitFailed)
 }
 
-
 async fn configure_dac<I>(
     i2c: &mut I,
 ) -> Result<(), DriverError>
 where
     I: I2c,
 {
-    dac_write(i2c, 0x00, 0x00).await?;
-
     // CODEC_CLKIN = MCLK
+    dac_write(i2c, 0x00, 0x00).await?;
     dac_write(i2c, 0x04, 0x00).await?;
 
     // NDAC = 8, powered
@@ -242,6 +239,7 @@ where
     // I2S, 16-bit, codec slave
     dac_write(i2c, 0x1B, 0x00).await?;
 
+    // Page 1
     dac_write(i2c, 0x00, 0x01).await?;
 
     // Common-mode voltage
@@ -267,6 +265,7 @@ where
     dac_write(i2c, 0x24, 0x92).await?;
     dac_write(i2c, 0x25, 0x92).await?;
 
+    // Page 0
     dac_write(i2c, 0x00, 0x00).await?;
 
     // Power DAC L/R + soft stepping
