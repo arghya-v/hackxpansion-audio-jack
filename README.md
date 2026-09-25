@@ -1,6 +1,7 @@
 # Hackxpansion Audio Jack
 This project adds stereo audio playback through a **TLV320DAC3100** DAC and a **3.5 mm headphone jack**, along with physical controls for playback.
-
+<br/>
+**Cargo**: pkg:cargo/audio_jack_firmware@0.1.0
 ## Images
 ![the case](https://cdn.hackclub.com/01a06d9f-5871-7f07-9ea1-f13b8a1d72d1/image.png)
 ![pcb](https://cdn.hackclub.com/01a0bb2e-7094-7034-8e83-c10658a84b9e/image.png)
