@@ -1,7 +1,7 @@
 # Hackxpansion Audio Jack
 This project adds stereo audio playback through a **TLV320DAC3100** DAC and a **3.5 mm headphone jack**, along with physical controls for playback.
 <br/>
-**Cargo**: pkg:cargo/audio_jack_firmware@0.1.0
+**Crates**: pkg:cargo/audio_jack_firmware@0.1.0
 ## Images
 ![the case](https://cdn.hackclub.com/01a06d9f-5871-7f07-9ea1-f13b8a1d72d1/image.png)
 ![pcb](https://cdn.hackclub.com/01a0bb2e-7094-7034-8e83-c10658a84b9e/image.png)
@@ -9,24 +9,6 @@ This project adds stereo audio playback through a **TLV320DAC3100** DAC and a **
 
 ## Schematic
 ![final schematic](https://cdn.hackclub.com/01a0bb2d-8350-7ae1-a54f-9b21094ca6af/image.png)
-
-## Features
-
-* Stereo audio output through a 3.5 mm headphone jack
-* TLV320DAC3100 stereo DAC
-* I²S audio data interface
-* 12.288 MHz MCLK generation using RP2350 PIO
-* 48 kHz, 16-bit audio
-* DMA-backed audio streaming
-* Three physical playback controls:
-
-  * **Next**
-  * **Previous**
-  * **Play / Pause**
-* Xpanse module integration through `xpanse-api`
-* Built with Embassy for asynchronous embedded Rust
-
-## Hardware
 
 ### Audio Module
 
@@ -43,48 +25,9 @@ This project adds stereo audio playback through a **TLV320DAC3100** DAC and a **
 | GPIO8 | Previous         |
 | GPIO9 | Play / Pause     |
 
-### Audio Chain
+See the [Xpanse API docs](https://docs.rs/xpanse-api/latest/xpanse_api/index.html)
 
 
-The TLV320DAC3100 provides the stereo DAC and integrated headphone output stage, so no separate headphone amplifier is required for the current design.
+---
 
-### `audio.rs`
-
-Contains the Xpanse audio-module driver, including:
-
-* TLV320DAC3100 initialization
-* I²C configuration
-* PIO MCLK generation
-* PIO I²S output
-* DMA audio streaming
-* Next / Previous / Play-Pause button registration
-* Test audio generation
-
-## Planned Architecture
-
-The final player is intended to use the following pipeline:
-
-```text
-SD Card
-   │
-   ▼
-MP3 File
-   │
-   ▼
-MP3 Decoder
-   │
-   ▼
-PCM Audio Buffer
-   │
-   ▼
-DMA
-   │
-   ▼
-I²S / RP2350 PIO
-   │
-   ▼
-TLV320DAC3100
-   │
-   ▼
-3.5 mm Headphone Jack
-```
+This was all possible thanks to [Hackspansion: A hackclub YSWS](http://hackxpansion.hackclub.com/)
