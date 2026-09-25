@@ -1,9 +1,8 @@
 use embassy_rp::{
-    bind_interrupts,
     dma,
     gpio::{Level, Output},
-    i2c,
-    peripherals::{DMA_CH0, I2C0},
+    interrupt::typelevel::{Binding, DMA_IRQ_0},
+    peripherals::DMA_CH0,
     pio_programs::{
         clk::{PioClk, PioClkProgram},
         i2s::{PioI2sOut, PioI2sOutProgram},
@@ -33,13 +32,10 @@ const SAMPLE_RATE: u32 = 48_000;
 const BIT_DEPTH: u32 = 16;
 const MCLK_FREQUENCY: u32 = 12_288_000;
 
-bind_interrupts!(struct I2cIrqs {
-    I2C0_IRQ => embassy_rp::i2c::InterruptHandler<I2C0>;
-});
+#[derive(Copy, Clone)]
+pub struct AudioDmaIrqs;
 
-bind_interrupts!(struct AudioDmaIrqs {
-    DMA_IRQ_0 => dma::InterruptHandler<DMA_CH0>;
-});
+unsafe impl Binding<DMA_IRQ_0, dma::InterruptHandler<DMA_CH0>> for AudioDmaIrqs {}
 
 pub struct AudioDriver;
 
@@ -53,8 +49,6 @@ impl DriverMeta for AudioDriver {
 impl<G> Driver<G> for AudioDriver
 where
     G: BankPins,
-    G::GPIO0: embassy_rp::i2c::SclPin<I2C0>,
-    G::GPIO1: embassy_rp::i2c::SdaPin<I2C0>,
 {
     async fn create(
         bank: GpioBank<G>,
@@ -78,11 +72,10 @@ where
 
         // I2C
         let mut i2c_bus = buses
-            .create_i2c_hardware::<I2C0, _>(
+            .create_i2c_bitbang(
                 bank.gpio0,
                 bank.gpio1,
-                I2cIrqs,
-                i2c::Config::default(),
+                400_000,
             )
             .map_err(|_| DriverError::InitFailed)?;
 
