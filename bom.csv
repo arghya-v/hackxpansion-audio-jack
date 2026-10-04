@@ -1,4 +1,4 @@
-Designator,Footprint,Quantity,Value,LCSC Part #,Price (CAD)
+Designator,Footprint,Quantity,Value,LCSC Part #,Price (USD)
 "C1, C4",C469553_C1210,2,220µF,C469553,3.88
 "C2, C3, C5, C7",C15850_C0805,4,10 µF,C15850,0.5208
 CN1,C2884926_AUDIO-TH_XKB_PJ-320A,1,PJ-320A,C2884926,0.4308
