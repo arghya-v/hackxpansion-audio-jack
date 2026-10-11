@@ -3,11 +3,11 @@ Designator,Footprint,Quantity,Value,LCSC Part #,Price (USD)
 "C2, C3, C5, C7",C15850_C0805,4,10 µF,C15850,0.5208
 CN1,C2884926_AUDIO-TH_XKB_PJ-320A,1,PJ-320A,C2884926,0.4308
 J1,Male_Module,1,Included in kit,,
-R1,0805,1,1k,Included in kit,
-R2,0805,1,62k,Included in kit,
+R1,0805,1,1k,C95781,0.50
+R2,0805,1,62k,C17783,0.50
 "SW1, SW2, SW3",SW_PUSH_6mm,3,Included in kit,,
 U1,C179677_LFCSP-32_L5_0-W5_0-P0_50-BL-EP,1,TLV320DAC3100IRHBR,C179677,3.7326
 PCB,,,PCB,,$4.00
 PCBA Fee,,,PCBA Assembly,,$20.7958
 Shipping,,,Shipping,,$6.45
-TOTAL,,,,,$39.81
+TOTAL,,,,,$40.81
